@@ -52,14 +52,7 @@ class CourseSerializer(serializers.ModelSerializer):
     
     def get_is_subscribed(self, obj: Course) -> bool:
         """Check if current user is subscribed to this course"""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            from users.models import Subscription
-            return Subscription.objects.filter(
-                user=request.user, 
-                course=obj, 
-                is_active=True
-            ).exists()
+        # Subscriptions not implemented in SB1 Market API
         return False
 
 

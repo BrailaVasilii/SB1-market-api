@@ -9,7 +9,6 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from materials.models import Course
-from users.models import Subscription
 
 User = get_user_model()
 
@@ -43,10 +42,6 @@ class EmailNotificationTaskTest(TestCase):
         self.course = Course.objects.create(
             title='Test Course',
             description='Test Description'
-        )
-        self.subscription = Subscription.objects.create(
-            user=self.user,
-            course=self.course
         )
 
     @patch('config.tasks.send_mail')
