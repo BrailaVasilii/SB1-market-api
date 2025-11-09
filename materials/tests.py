@@ -7,7 +7,6 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from materials.models import Course, Lesson
 from materials.validators import validate_youtube_url
-from users.models import Subscription
 
 User = get_user_model()
 
@@ -228,89 +227,3 @@ class LessonCRUDAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
-class CourseSubscriptionAPITest(APITestCase):
-    """Test subscription functionality for courses"""
-    
-    def setUp(self):
-        """Set up test data"""
-        self.client = APIClient()
-        
-        # Create test user
-        self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass123'
-        )
-        
-        # Create test course
-        self.course = Course.objects.create(
-            title='Test Course',
-            description='Test Description',
-            owner=self.user
-        )
-    
-    def test_subscription_toggle_requires_authentication(self):
-        """Test subscription toggle requires authentication"""
-        url = reverse('users:subscription-toggle')
-        data = {'course_id': self.course.id}
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-    
-    def test_subscription_create_success(self):
-        """Test creating subscription successfully"""
-        self.client.force_authenticate(user=self.user)
-        url = reverse('users:subscription-toggle')
-        data = {'course_id': self.course.id}
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'подписка добавлена')
-        self.assertTrue(Subscription.objects.filter(user=self.user, course=self.course).exists())
-    
-    def test_subscription_delete_success(self):
-        """Test deleting existing subscription"""
-        # Create subscription first
-        Subscription.objects.create(user=self.user, course=self.course)
-        
-        self.client.force_authenticate(user=self.user)
-        url = reverse('users:subscription-toggle')
-        data = {'course_id': self.course.id}
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'подписка удалена')
-        self.assertFalse(Subscription.objects.filter(user=self.user, course=self.course).exists())
-    
-    def test_subscription_toggle_missing_course_id(self):
-        """Test subscription toggle with missing course_id"""
-        self.client.force_authenticate(user=self.user)
-        url = reverse('users:subscription-toggle')
-        response = self.client.post(url, {})
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    
-    def test_subscription_status_in_course_serializer(self):
-        """Test is_subscribed field in course serializer"""
-        self.client.force_authenticate(user=self.user)
-        url = reverse('materials:course-detail', kwargs={'pk': self.course.id})
-        
-        # Check without subscription
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data['is_subscribed'])
-        
-        # Create subscription
-        Subscription.objects.create(user=self.user, course=self.course)
-        
-        # Check with subscription
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data['is_subscribed'])
-    
-    def test_subscription_list(self):
-        """Test listing user subscriptions"""
-        # Create subscription
-        Subscription.objects.create(user=self.user, course=self.course)
-        
-        self.client.force_authenticate(user=self.user)
-        url = reverse('users:subscription-list')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['course_title'], self.course.title)

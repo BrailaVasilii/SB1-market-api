@@ -11,7 +11,6 @@ from datetime import timedelta
 import logging
 
 from materials.models import Course
-from users.models import Subscription
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -32,22 +31,17 @@ def send_course_update_notification(self, course_id: int) -> dict:
         # Get course
         course = Course.objects.get(id=course_id)
 
-        # Get all active subscriptions for this course
-        subscriptions = Subscription.objects.filter(
-            course=course,
-            is_active=True
-        ).select_related('user')
+        # For SB1 Market API - no subscription model needed
+        # This function is disabled as subscriptions are not part of the market API
+        logger.info(f"Course update notification skipped for {course.title} - not implemented for market API")
+        return {
+            'status': 'success',
+            'course_id': course_id,
+            'notifications_sent': 0,
+            'message': 'Subscription notifications not implemented for market API'
+        }
 
-        if not subscriptions.exists():
-            logger.info(f"No active subscriptions found for course {course.title}")
-            return {
-                'status': 'success',
-                'course_id': course_id,
-                'notifications_sent': 0,
-                'message': 'No subscribers found'
-            }
-
-        # Prepare email content
+        # Prepare email content (kept for reference but not used)
         subject = f"Course Update: {course.title}"
         message = f"""
 Hello!
@@ -62,8 +56,8 @@ Best regards,
 LMS Platform Team
         """
 
-        # Send emails to all subscribers
-        recipient_list = [sub.user.email for sub in subscriptions]
+        # No subscribers for market API
+        recipient_list = []
 
         send_mail(
             subject=subject,
