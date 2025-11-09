@@ -11,18 +11,18 @@ class MaterialsPagination(PageNumberPagination):
     max_page_size = 50  # Maximum allowed page size
     
     
-class LessonPagination(PageNumberPagination):
+class ReviewPagination(PageNumberPagination):
     """
-    Specific pagination for lessons with smaller page size.
+    Specific pagination for reviews with smaller page size.
     """
     page_size = 5
     page_size_query_param = 'page_size'
     max_page_size = 20
 
 
-class CoursePagination(PageNumberPagination):
+class AdvertisementPagination(PageNumberPagination):
     """
-    Specific pagination for courses.
+    Specific pagination for advertisements.
     """
     page_size = 8
     page_size_query_param = 'page_size'

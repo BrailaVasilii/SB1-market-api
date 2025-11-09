@@ -1,72 +1,61 @@
 from rest_framework import serializers
-from materials.models import Course, Lesson
-from materials.validators import validate_youtube_url, YouTubeURLValidator
-from typing import Dict, Any
+from materials.models import Advertisement, Review
 
 
-class LessonForCourseSerializer(serializers.ModelSerializer):
-    """Simplified serializer for lessons when displayed within course"""
+class ReviewForAdvertisementSerializer(serializers.ModelSerializer):
+    """Simplified serializer for reviews when displayed within advertisement"""
+    
+    author_email = serializers.CharField(source='author.email', read_only=True)
     
     class Meta:
-        model = Lesson
-        fields = ['id', 'title', 'description', 'video_url']
+        model = Review
+        fields = ['id', 'text', 'author_email', 'created_at']
 
 
-class LessonSerializer(serializers.ModelSerializer):
-    """Full serializer for Lesson model"""
+class ReviewSerializer(serializers.ModelSerializer):
+    """Full serializer for Review model"""
     
-    video_url = serializers.URLField(
-        required=False, 
-        allow_blank=True,
-        validators=[validate_youtube_url]
-    )
+    author_email = serializers.CharField(source='author.email', read_only=True)
+    ad_title = serializers.CharField(source='ad.title', read_only=True)
     
     class Meta:
-        model = Lesson
+        model = Review
         fields = [
-            'id', 'title', 'description', 'preview', 
-            'video_url', 'course', 'created_at', 'updated_at'
+            'id', 'text', 'author', 'author_email', 
+            'ad', 'ad_title', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-        validators = [YouTubeURLValidator(field='video_url')]
+        read_only_fields = ['id', 'author', 'created_at']
 
 
-class CourseSerializer(serializers.ModelSerializer):
-    """Serializer for Course model with nested lessons"""
+class AdvertisementSerializer(serializers.ModelSerializer):
+    """Serializer for Advertisement model with nested reviews"""
     
-    lessons = LessonForCourseSerializer(many=True, read_only=True)
-    lessons_count = serializers.SerializerMethodField()
-    is_subscribed = serializers.SerializerMethodField()
+    reviews = ReviewForAdvertisementSerializer(many=True, read_only=True)
+    reviews_count = serializers.SerializerMethodField()
+    author_email = serializers.CharField(source='author.email', read_only=True)
     
     class Meta:
-        model = Course
+        model = Advertisement
         fields = [
-            'id', 'title', 'description', 'preview',
-            'lessons_count', 'lessons', 'is_subscribed', 'created_at', 'updated_at'
+            'id', 'title', 'price', 'description', 'author', 'author_email',
+            'image', 'reviews_count', 'reviews', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'author', 'created_at', 'updated_at']
         
-    def get_lessons_count(self, obj: Course) -> int:
-        """Get count of lessons in the course"""
-        return obj.lessons.count()
-    
-    def get_is_subscribed(self, obj: Course) -> bool:
-        """Check if current user is subscribed to this course"""
-        # Subscriptions not implemented in SB1 Market API
-        return False
+    def get_reviews_count(self, obj: Advertisement) -> int:
+        """Get count of reviews for the advertisement"""
+        return obj.reviews.count()
 
 
-class CourseDetailSerializer(CourseSerializer):
-    """Detailed serializer for Course with full lesson info"""
+class AdvertisementDetailSerializer(AdvertisementSerializer):
+    """Detailed serializer for Advertisement with full review info"""
     
-    class Meta(CourseSerializer.Meta):
+    class Meta(AdvertisementSerializer.Meta):
         pass
 
 
-class LessonDetailSerializer(LessonSerializer):
-    """Detailed serializer for Lesson with course info"""
+class ReviewDetailSerializer(ReviewSerializer):
+    """Detailed serializer for Review with advertisement info"""
     
-    course_title = serializers.CharField(source='course.title', read_only=True)
-    
-    class Meta(LessonSerializer.Meta):
-        fields = LessonSerializer.Meta.fields + ['course_title']
+    class Meta(ReviewSerializer.Meta):
+        fields = ReviewSerializer.Meta.fields

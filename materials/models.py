@@ -1,51 +1,63 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from typing import Optional
 
 User = get_user_model()
 
 
-class Course(models.Model):
-    """Course model for LMS platform"""
+class Advertisement(models.Model):
+    """Advertisement model for marketplace platform"""
     
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    preview = models.ImageField(upload_to='courses/previews/', blank=True, null=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses', null=True, blank=True)
+    title = models.CharField(max_length=200, verbose_name='Название')
+    price = models.IntegerField(verbose_name='Цена')
+    description = models.TextField(verbose_name='Описание')
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='advertisements',
+        verbose_name='Автор объявления'
+    )
+    image = models.ImageField(
+        upload_to='advertisements/images/',
+        blank=True,
+        null=True,
+        verbose_name='Изображение'
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = 'Course'
-        verbose_name_plural = 'Courses'
+        verbose_name = 'Объявление'
+        verbose_name_plural = 'Объявления'
         ordering = ['-created_at']
         
     def __str__(self) -> str:
-        return self.title
+        return f"{self.title} - {self.price} руб."
 
 
-class Lesson(models.Model):
-    """Lesson model for LMS platform"""
+class Review(models.Model):
+    """Review/Comment model for advertisements"""
     
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    preview = models.ImageField(upload_to='lessons/previews/', blank=True, null=True)
-    video_url = models.URLField(blank=True)
-    course = models.ForeignKey(
-        Course, 
-        on_delete=models.CASCADE, 
-        related_name='lessons'
+    text = models.TextField(verbose_name='Текст отзыва')
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Автор отзыва'
     )
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lessons', null=True, blank=True)
+    ad = models.ForeignKey(
+        Advertisement,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Объявление'
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = 'Lesson'
-        verbose_name_plural = 'Lessons'
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
         ordering = ['created_at']
         
     def __str__(self) -> str:
-        return self.title
+        return f"Отзыв от {self.author.email} на {self.ad.title}"
