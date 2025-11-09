@@ -5,7 +5,7 @@ from django.urls import reverse
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from materials.models import Course, Lesson
+from materials.models import Advertisement, Review
 from materials.validators import validate_youtube_url
 
 User = get_user_model()

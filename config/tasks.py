@@ -10,7 +10,7 @@ from django.utils import timezone
 from datetime import timedelta
 import logging
 
-from materials.models import Course
+from materials.models import Advertisement
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -28,12 +28,12 @@ def send_course_update_notification(self, course_id: int) -> dict:
         dict: Task execution result with statistics
     """
     try:
-        # Get course
-        course = Course.objects.get(id=course_id)
+        # Get advertisement
+        ad = Advertisement.objects.get(id=course_id)
 
         # For SB1 Market API - no subscription model needed
         # This function is disabled as subscriptions are not part of the market API
-        logger.info(f"Course update notification skipped for {course.title} - not implemented for market API")
+        logger.info(f"Advertisement update notification skipped for {ad.title} - not implemented for market API")
         return {
             'status': 'success',
             'course_id': course_id,
@@ -78,16 +78,16 @@ LMS Platform Team
             'recipients': recipient_list
         }
 
-    except Course.DoesNotExist:
-        logger.error(f"Course with ID {course_id} not found")
+    except Advertisement.DoesNotExist:
+        logger.error(f"Advertisement with ID {course_id} not found")
         return {
             'status': 'error',
             'course_id': course_id,
-            'error': 'Course not found'
+            'error': 'Advertisement not found'
         }
 
     except Exception as exc:
-        logger.error(f"Error sending course update notifications: {str(exc)}")
+        logger.error(f"Error sending advertisement update notifications: {str(exc)}")
         # Retry the task
         raise self.retry(exc=exc, countdown=60)
 
@@ -158,36 +158,36 @@ def send_course_update_notification_with_throttling(course_id: int) -> dict:
         dict: Task execution result
     """
     try:
-        course = Course.objects.get(id=course_id)
+        ad = Advertisement.objects.get(id=course_id)
 
-        # Check if course was updated within last 4 hours
+        # Check if advertisement was updated within last 4 hours
         four_hours_ago = timezone.now() - timedelta(hours=4)
 
-        if course.updated_at > four_hours_ago:
+        if ad.updated_at > four_hours_ago:
             logger.info(
-                f"Course {course.title} was updated recently, skipping notification")
+                f"Advertisement {ad.title} was updated recently, skipping notification")
             return {
                 'status': 'skipped',
                 'course_id': course_id,
-                'reason': 'Course updated within last 4 hours',
-                'last_update': course.updated_at.isoformat()
+                'reason': 'Advertisement updated within last 4 hours',
+                'last_update': ad.updated_at.isoformat()
             }
 
-        # Course wasn't updated recently, send notification
+        # Advertisement wasn't updated recently, send notification
         send_course_update_notification.delay(course_id)
 
         return {
             'status': 'notification_sent',
             'course_id': course_id,
-            'last_update': course.updated_at.isoformat()
+            'last_update': ad.updated_at.isoformat()
         }
 
-    except Course.DoesNotExist:
-        logger.error(f"Course with ID {course_id} not found")
+    except Advertisement.DoesNotExist:
+        logger.error(f"Advertisement with ID {course_id} not found")
         return {
             'status': 'error',
             'course_id': course_id,
-            'error': 'Course not found'
+            'error': 'Advertisement not found'
         }
 
     except Exception as exc:

@@ -8,7 +8,7 @@ from django.utils import timezone
 from datetime import timedelta
 from unittest.mock import patch
 
-from materials.models import Course
+from materials.models import Advertisement
 
 User = get_user_model()
 
@@ -39,9 +39,11 @@ class EmailNotificationTaskTest(TestCase):
             email='test@example.com',
             password='testpass123'
         )
-        self.course = Course.objects.create(
-            title='Test Course',
-            description='Test Description'
+        self.ad = Advertisement.objects.create(
+            title='Test Advertisement',
+            price=1000,
+            description='Test Description',
+            author=self.user
         )
 
     @patch('config.tasks.send_mail')
@@ -50,7 +52,7 @@ class EmailNotificationTaskTest(TestCase):
         from config.tasks import send_course_update_notification
 
         # Task should be callable
-        result = send_course_update_notification.delay(self.course.id)
+        result = send_course_update_notification.delay(self.ad.id)
         self.assertIsNotNone(result)
 
     @patch('config.tasks.send_mail')
@@ -58,13 +60,13 @@ class EmailNotificationTaskTest(TestCase):
         """Test notification is sent to all course subscribers"""
         from config.tasks import send_course_update_notification
 
-        send_course_update_notification(self.course.id)
+        send_course_update_notification(self.ad.id)
 
         # Verify email was sent
         mock_send_mail.assert_called_once()
         args = mock_send_mail.call_args[1]
         self.assertIn(self.user.email, args['recipient_list'])
-        self.assertIn(self.course.title, args['subject'])
+        self.assertIn(self.ad.title, args['subject'])
 
 
 class UserDeactivationTaskTest(TestCase):
@@ -123,9 +125,11 @@ class CourseUpdateThrottlingTest(TestCase):
             email='test@example.com',
             password='testpass123'
         )
-        self.course = Course.objects.create(
-            title='Test Course',
-            description='Test Description'
+        self.ad = Advertisement.objects.create(
+            title='Test Advertisement',
+            price=1000,
+            description='Test Description',
+            author=self.user
         )
 
     def test_course_update_within_four_hours_no_notification(self):
@@ -133,11 +137,11 @@ class CourseUpdateThrottlingTest(TestCase):
         from config.tasks import send_course_update_notification_with_throttling
 
         # Update course recently
-        self.course.updated_at = timezone.now() - timedelta(hours=2)
-        self.course.save()
+        self.ad.updated_at = timezone.now() - timedelta(hours=2)
+        self.ad.save()
 
         with patch('config.tasks.send_course_update_notification') as mock_task:
-            send_course_update_notification_with_throttling(self.course.id)
+            send_course_update_notification_with_throttling(self.ad.id)
             mock_task.delay.assert_not_called()
 
     def test_course_update_after_four_hours_sends_notification(self):
@@ -145,13 +149,13 @@ class CourseUpdateThrottlingTest(TestCase):
         from config.tasks import send_course_update_notification_with_throttling
 
         # Update course more than 4 hours ago
-        self.course.updated_at = timezone.now() - timedelta(hours=5)
-        self.course.save()
+        self.ad.updated_at = timezone.now() - timedelta(hours=5)
+        self.ad.save()
 
         # Mock the actual task instead of module import
         with patch('config.tasks.send_course_update_notification.delay') as mock_task:
-            result = send_course_update_notification_with_throttling(self.course.id)
-            mock_task.assert_called_once_with(self.course.id)
+            result = send_course_update_notification_with_throttling(self.ad.id)
+            mock_task.assert_called_once_with(self.ad.id)
             self.assertEqual(result['status'], 'notification_sent')
 
 
