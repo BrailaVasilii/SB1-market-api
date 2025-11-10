@@ -1,51 +1,32 @@
-from rest_framework import viewsets, generics
+from rest_framework import viewsets, permissions
+from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from .permissions import IsOwnerOrAdmin
+from .paginators import AdvertisementPagination
+from .filters import AdvertisementFilter
+from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from materials.models import Advertisement, Review
 from materials.serializers import (
     AdvertisementSerializer, AdvertisementDetailSerializer,
     ReviewSerializer, ReviewDetailSerializer
 )
-from materials.paginators import AdvertisementPagination, ReviewPagination
 from users.permissions import IsModerator, IsOwner
 
 
 class AdvertisementViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for Advertisement model providing full CRUD operations
-    Following SB1 Market API requirements for permissions
-    """
+    """ViewSet для управления объявлениями"""
 
     queryset = Advertisement.objects.all()
     serializer_class = AdvertisementSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrAdmin]
     pagination_class = AdvertisementPagination
-
-    def get_permissions(self):
-        """
-        Instantiate and return the list of permissions required for this view.
-        Moderators: can view/edit, but not create/delete
-        Authors: can view/edit/delete their own advertisements
-        """
-        if self.action == 'create':
-            # Only authenticated non-moderators can create
-            self.permission_classes = [IsAuthenticated, ~IsModerator]
-        elif self.action in ['destroy']:
-            # Only authors can delete (moderators cannot)
-            self.permission_classes = [IsAuthenticated, IsOwner]
-        elif self.action in ['update', 'partial_update', 'retrieve']:
-            # Moderators OR authors can view/edit
-            self.permission_classes = [IsAuthenticated, IsModerator | IsOwner]
-        elif self.action == 'list':
-            # All authenticated users can list
-            self.permission_classes = [IsAuthenticated]
-        else:
-            self.permission_classes = [IsAuthenticated]
-
-        return [permission() for permission in self.permission_classes]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = AdvertisementFilter
 
     def perform_create(self, serializer):
-        """Automatically assign the current user as author when creating"""
+        """Автоматически устанавливать автора при создании"""
         serializer.save(author=self.request.user)
 
     def get_serializer_class(self):
@@ -67,6 +48,18 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+class ReviewViewSet(viewsets.ModelViewSet):
+    """ViewSet для управления отзывами"""
+
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrAdmin]
+
+    def perform_create(self, serializer):
+        """Автоматически устанавливать автора при создании"""
+        serializer.save(author=self.request.user)
+
+
 class ReviewListCreateAPIView(generics.ListCreateAPIView):
     """
     Generic view for listing and creating reviews
@@ -75,7 +68,7 @@ class ReviewListCreateAPIView(generics.ListCreateAPIView):
 
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    pagination_class = ReviewPagination
+    pagination_class = AdvertisementPagination
     permission_classes = [IsAuthenticated, ~IsModerator]  # Non-moderators can create
 
     def perform_create(self, serializer):
