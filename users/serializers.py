@@ -8,31 +8,24 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer for User model"""
-    
+    """Serializer для User model"""
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'phone', 'city', 'avatar', 'first_name', 'last_name', 'role']
-        read_only_fields = ['id']
+        fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'city', 'avatar', 'role']
+        read_only_fields = ['id', 'role']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for user registration"""
-    
-    password = serializers.CharField(write_only=True, validators=[validate_password])
-    password_confirm = serializers.CharField(write_only=True)
-    
+    """Serializer для регистрации пользователя"""
+
+    password = serializers.CharField(write_only=True, min_length=8)
+
     class Meta:
         model = User
-        fields = ['email', 'password', 'password_confirm', 'phone', 'city', 'avatar', 'first_name', 'last_name']
-        
-    def validate(self, attrs):
-        if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Passwords don't match")
-        return attrs
-        
+        fields = ['email', 'password', 'first_name', 'last_name', 'phone', 'city']
+
     def create(self, validated_data):
-        validated_data.pop('password_confirm')
         user = User.objects.create_user(**validated_data)
         return user
 
