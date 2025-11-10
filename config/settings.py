@@ -38,13 +38,18 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+
     # DRF
     "rest_framework",
     "rest_framework_simplejwt",
     "django_filters",
     "drf_spectacular",
+    "corsheaders",
+    "djoser",
+
     # Celery
     "django_celery_beat",
+
     # Local apps
     "users",
     "materials",
@@ -52,6 +57,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -161,8 +167,8 @@ SIMPLE_JWT = {
 
 # DRF Spectacular settings
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'LMS Platform API',
-    'DESCRIPTION': 'Django REST Framework project pentru o platformă de Learning Management System (LMS) cu funcționalități avansate de autentificare, autorizare și management al conținutului educațional.',
+    'TITLE': 'SB1 Market API',
+    'DESCRIPTION': 'Backend API для доски объявлений с функционалом управления объявлениями и отзывами',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'SCHEMA_PATH_PREFIX': '/api/v1/',
@@ -174,10 +180,36 @@ SPECTACULAR_SETTINGS = {
     },
 }
 
-# Stripe settings
-STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='pk_test_default')
-STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='sk_test_default')
-STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='whsec_default')
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
 # Celery Configuration
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
