@@ -1,95 +1,14 @@
 """
-Celery tasks for LMS platform
-Following TDD principles and Django best practices
+Celery tasks for SB1 Market API
 """
 from celery import shared_task
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
-from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 import logging
 
-from materials.models import Advertisement
-
 User = get_user_model()
 logger = logging.getLogger(__name__)
-
-
-@shared_task(bind=True, max_retries=3)
-def send_course_update_notification(self, course_id: int) -> dict:
-    """
-    Send email notifications to all subscribers of a course
-
-    Args:
-        course_id: ID of the updated course
-
-    Returns:
-        dict: Task execution result with statistics
-    """
-    try:
-        # Get advertisement
-        ad = Advertisement.objects.get(id=course_id)
-
-        # For SB1 Market API - no subscription model needed
-        # This function is disabled as subscriptions are not part of the market API
-        logger.info(f"Advertisement update notification skipped for {ad.title} - not implemented for market API")
-        return {
-            'status': 'success',
-            'course_id': course_id,
-            'notifications_sent': 0,
-            'message': 'Subscription notifications not implemented for market API'
-        }
-
-        # Prepare email content (kept for reference but not used)
-        subject = f"Course Update: {course.title}"
-        message = f"""
-Hello!
-
-The course "{course.title}" has been updated with new content.
-
-Course Description: {course.description}
-
-Log in to your LMS platform to check out the latest updates!
-
-Best regards,
-LMS Platform Team
-        """
-
-        # No subscribers for market API
-        recipient_list = []
-
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=recipient_list,
-            fail_silently=False,
-        )
-
-        logger.info(
-            f"Course update notifications sent for {course.title} "
-            f"to {len(recipient_list)} users")
-
-        return {
-            'status': 'success',
-            'course_id': course_id,
-            'notifications_sent': len(recipient_list),
-            'recipients': recipient_list
-        }
-
-    except Advertisement.DoesNotExist:
-        logger.error(f"Advertisement with ID {course_id} not found")
-        return {
-            'status': 'error',
-            'course_id': course_id,
-            'error': 'Advertisement not found'
-        }
-
-    except Exception as exc:
-        logger.error(f"Error sending advertisement update notifications: {str(exc)}")
-        # Retry the task
-        raise self.retry(exc=exc, countdown=60)
 
 
 @shared_task
@@ -141,59 +60,5 @@ def deactivate_inactive_users() -> dict:
         logger.error(f"Error deactivating inactive users: {str(exc)}")
         return {
             'status': 'error',
-            'error': str(exc)
-        }
-
-
-@shared_task
-def send_course_update_notification_with_throttling(course_id: int) -> dict:
-    """
-    Send course update notification with throttling
-    Only sends notification if course wasn't updated within last 4 hours
-
-    Args:
-        course_id: ID of the updated course
-
-    Returns:
-        dict: Task execution result
-    """
-    try:
-        ad = Advertisement.objects.get(id=course_id)
-
-        # Check if advertisement was updated within last 4 hours
-        four_hours_ago = timezone.now() - timedelta(hours=4)
-
-        if ad.updated_at > four_hours_ago:
-            logger.info(
-                f"Advertisement {ad.title} was updated recently, skipping notification")
-            return {
-                'status': 'skipped',
-                'course_id': course_id,
-                'reason': 'Advertisement updated within last 4 hours',
-                'last_update': ad.updated_at.isoformat()
-            }
-
-        # Advertisement wasn't updated recently, send notification
-        send_course_update_notification.delay(course_id)
-
-        return {
-            'status': 'notification_sent',
-            'course_id': course_id,
-            'last_update': ad.updated_at.isoformat()
-        }
-
-    except Advertisement.DoesNotExist:
-        logger.error(f"Advertisement with ID {course_id} not found")
-        return {
-            'status': 'error',
-            'course_id': course_id,
-            'error': 'Advertisement not found'
-        }
-
-    except Exception as exc:
-        logger.error(f"Error in throttled notification: {str(exc)}")
-        return {
-            'status': 'error',
-            'course_id': course_id,
             'error': str(exc)
         }
