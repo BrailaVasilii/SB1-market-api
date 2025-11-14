@@ -109,8 +109,8 @@ jobs:
 
     - name: Test Docker build
       run: |
-        docker-compose build
+        docker compose build
 
     - name: Verify Docker setup
       run: |
-        docker-compose config
+        docker compose config
