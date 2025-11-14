@@ -1,11 +1,13 @@
 """
 Celery tasks for SB1 Market API
 """
+
+import logging
+from datetime import timedelta
+
 from celery import shared_task
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from datetime import timedelta
-import logging
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -25,10 +27,7 @@ def deactivate_inactive_users() -> dict:
         cutoff_date = timezone.now() - timedelta(days=30)
 
         # Find users who haven't logged in for over a month and are still active
-        inactive_users = User.objects.filter(
-            last_login__lt=cutoff_date,
-            is_active=True
-        )
+        inactive_users = User.objects.filter(last_login__lt=cutoff_date, is_active=True)
 
         # Count for logging
         user_count = inactive_users.count()
@@ -36,13 +35,13 @@ def deactivate_inactive_users() -> dict:
         if user_count == 0:
             logger.info("No inactive users found to deactivate")
             return {
-                'status': 'success',
-                'users_deactivated': 0,
-                'message': 'No inactive users found'
+                "status": "success",
+                "users_deactivated": 0,
+                "message": "No inactive users found",
             }
 
         # Get user emails for logging
-        user_emails = list(inactive_users.values_list('email', flat=True))
+        user_emails = list(inactive_users.values_list("email", flat=True))
 
         # Deactivate users
         inactive_users.update(is_active=False)
@@ -50,15 +49,12 @@ def deactivate_inactive_users() -> dict:
         logger.info(f"Deactivated {user_count} inactive users: {user_emails}")
 
         return {
-            'status': 'success',
-            'users_deactivated': user_count,
-            'deactivated_users': user_emails,
-            'cutoff_date': cutoff_date.isoformat()
+            "status": "success",
+            "users_deactivated": user_count,
+            "deactivated_users": user_emails,
+            "cutoff_date": cutoff_date.isoformat(),
         }
 
     except Exception as exc:
         logger.error(f"Error deactivating inactive users: {str(exc)}")
-        return {
-            'status': 'error',
-            'error': str(exc)
-        }
+        return {"status": "error", "error": str(exc)}

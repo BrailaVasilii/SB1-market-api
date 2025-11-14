@@ -1,4 +1,5 @@
 from django_filters import rest_framework as filters
+
 from .models import Advertisement
 
 
@@ -9,11 +10,9 @@ class AdvertisementFilter(filters.FilterSet):
     """
 
     title = filters.CharFilter(
-        field_name='title',
-        lookup_expr='icontains',
-        label='Поиск по названию'
+        field_name="title", lookup_expr="icontains", label="Поиск по названию"
     )
 
     class Meta:
         model = Advertisement
-        fields = ['title']
+        fields = ["title"]

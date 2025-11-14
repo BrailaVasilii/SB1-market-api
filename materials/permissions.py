@@ -29,4 +29,4 @@ class IsOwnerOrAdmin(permissions.BasePermission):
             return True
 
         # Write permissions для owner или admin
-        return obj.author == request.user or request.user.role == 'admin'
+        return obj.author == request.user or request.user.role == "admin"
