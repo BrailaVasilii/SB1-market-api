@@ -1,18 +1,21 @@
-from rest_framework import viewsets, permissions
-from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
-from .permissions import IsOwnerOrAdmin
-from .paginators import AdvertisementPagination
-from .filters import AdvertisementFilter
-from rest_framework import generics
-from rest_framework.response import Response
+from rest_framework import generics, permissions, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.response import Response
+
 from materials.models import Advertisement, Review
 from materials.serializers import (
-    AdvertisementSerializer, AdvertisementDetailSerializer,
-    ReviewSerializer, ReviewDetailSerializer
+    AdvertisementDetailSerializer,
+    AdvertisementSerializer,
+    ReviewDetailSerializer,
+    ReviewSerializer,
 )
 from users.permissions import IsModerator, IsOwner
+
+from .filters import AdvertisementFilter
+from .paginators import AdvertisementPagination
+from .permissions import IsOwnerOrAdmin
 
 
 class AdvertisementViewSet(viewsets.ModelViewSet):
@@ -31,15 +34,15 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         """Return appropriate serializer class based on action"""
-        if self.action == 'retrieve':
+        if self.action == "retrieve":
             return AdvertisementDetailSerializer
         return AdvertisementSerializer
 
     def get_queryset(self):
         """Get queryset with prefetched reviews for performance"""
-        return Advertisement.objects.prefetch_related('reviews')
+        return Advertisement.objects.prefetch_related("reviews")
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=["get"])
     def reviews(self, request, pk=None):
         """Get all reviews for a specific advertisement"""
         ad = self.get_object()
@@ -69,7 +72,7 @@ class ReviewListCreateAPIView(generics.ListCreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     pagination_class = AdvertisementPagination
-    permission_classes = [IsAuthenticated, ~IsModerator]  # Non-moderators can create
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
         """Automatically assign the current user as author when creating"""
@@ -77,7 +80,7 @@ class ReviewListCreateAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         """Get queryset with selected related advertisement for performance"""
-        return Review.objects.select_related('ad')
+        return Review.objects.select_related("ad")
 
 
 class ReviewRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -88,8 +91,8 @@ class ReviewRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Review.objects.all()
     serializer_class = ReviewDetailSerializer
-    permission_classes = [IsAuthenticated, IsModerator | IsOwner]
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrAdmin]
 
     def get_queryset(self):
         """Get queryset with selected related advertisement for performance"""
-        return Review.objects.select_related('ad')
+        return Review.objects.select_related("ad")

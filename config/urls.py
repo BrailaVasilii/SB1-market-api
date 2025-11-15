@@ -16,7 +16,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
@@ -26,14 +26,20 @@ from drf_spectacular.views import (
 urlpatterns = [
     path("admin/", admin.site.urls),
     # DRF Browsable API
-    path('api-auth/', include('rest_framework.urls')),
+    path("api-auth/", include("rest_framework.urls")),
     # API Documentation
-    path('api/v1/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/v1/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path("api/v1/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/v1/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
+    path(
+        "api/v1/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"
+    ),
     # Djoser endpoints (password reset)
-    path('api/auth/', include('djoser.urls')),
+    path("api/auth/", include("djoser.urls")),
     # API endpoints
-    path('api/v1/', include('materials.urls', namespace='materials')),
-    path('api/v1/', include('users.urls', namespace='users')),
+    path("api/v1/", include("materials.urls", namespace="materials")),
+    path("api/v1/", include("users.urls", namespace="users")),
 ]

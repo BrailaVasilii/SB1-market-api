@@ -1,10 +1,8 @@
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from rest_framework import serializers
 
 User = get_user_model()
-
-
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,8 +10,17 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'city', 'avatar', 'role']
-        read_only_fields = ['id', 'role']
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "phone",
+            "city",
+            "avatar",
+            "role",
+        ]
+        read_only_fields = ["id", "role"]
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -23,10 +30,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'first_name', 'last_name', 'phone', 'city']
+        fields = ["email", "password", "first_name", "last_name", "phone", "city"]
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
-
-
